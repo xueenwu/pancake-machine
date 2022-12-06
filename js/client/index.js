@@ -279,6 +279,7 @@ function operateCanvas() {
   // get canvas 2D context and set him correct size
   var ctx = canvas.getContext('2d');
   resize();
+  // resize();
 
   // last known position
   var pos = { x: 0, y: 0 };
