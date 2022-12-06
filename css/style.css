@@ -1,0 +1,15 @@
+.column_80 {
+  float: left;
+  width: 80%;
+}
+
+.column_20 {
+    float:left;
+    width: 20%;
+    background: #EEEEEE;
+}
+
+.row {
+  display: flex;
+}
+
