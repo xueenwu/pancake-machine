@@ -41,9 +41,7 @@ const view = (state) => html`
         style="border:1px solid #000000;"
       >
       </canvas>
-      <button class="button" @click=${runPresetCode}>
-        Click to step axisMotor
-      </button>
+      <button id="send-code" class="button">Click to step axisMotor</button>
     </div>
   </div>
   ${state.renaming !== '' ? renameForm(state) : ''}
@@ -118,7 +116,6 @@ const renameForm = (state) => html`
     <button
       class="button"
       @click=${() => {
-        // console.log(state);
         const thing = state.things[state.renaming];
         const newName = document.querySelector('.rename-form-input').value;
         thing.vThing.setName(newName);
@@ -169,11 +166,12 @@ let intervals = [];
 let timeouts = [];
 let loops = [];
 
-function runCode(codeStr) {
-  // const code = getCode();
-  // const code = `await axisMotor.setCScale(1);
-  // await axisMotor.setSPU(1);
-  // await axisMotor.relative(1);`;
+function runCode() {
+  const code = getCode();
+  runCodeStr(code);
+}
+
+function runCodeStr(codeStr) {
   const code = codeStr;
   console.log(code);
 
@@ -243,6 +241,22 @@ function runCode(codeStr) {
   f(...values);
 }
 
+function runCodeXyCoords(xyCoords) {
+  runCodeStr(
+    `/*
+    MOTORS:
+      - axisMotor: stepper motor that controls rotation of arm + pancake extruder
+      - extrusionMotor: stepper motor that controls the extrusion of pancake batter
+      - rMotor: stepper motor that controls the distance of the extruder from the axis
+    */
+   
+    await axisMotor.setCScale(0.5);
+    await axisMotor.setSPU(100);
+    await axisMotor.setVelocity(100);
+    await axisMotor.relative(1);`
+  );
+}
+
 window.addEventListener('keydown', (e) => {
   const code = getCode();
 
@@ -250,23 +264,18 @@ window.addEventListener('keydown', (e) => {
 
   if (e.keyCode === 13 && e.shiftKey) {
     console.log('shift + enter');
-    const code = getCode();
+    // const code = getCode();
     // code = `await axisMotor.setCScale(1);
     // await axisMotor.setSPU(1);
     // await axisMotor.relative(1);`;
-    runCode(code);
+    runCode();
     e.preventDefault();
   }
 });
 
-function runPresetCode() {
-  runCode(`await axisMotor.setCScale(0.5);
-    await axisMotor.setSPU(100);
-    await axisMotor.setVelocity(100);
-    await axisMotor.relative(1);`);
-}
-
 function operateCanvas() {
+  var xyCoords = [];
+  window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
   // create canvas element and append it to document body
   // var canvas = document.createElement('canvas');
   var canvas = document.getElementById('draw-pancake');
@@ -288,6 +297,9 @@ function operateCanvas() {
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mousedown', setPosition);
   canvas.addEventListener('mouseenter', setPosition);
+
+  var sendCodeButton = document.getElementById('send-code');
+  sendCodeButton.addEventListener('click', sendCode);
 
   // get x and y position within the canvas
   function getMousePos(canvas, e) {
@@ -328,7 +340,15 @@ function operateCanvas() {
       console.log('x', pos.x, 'y', pos.y);
 
       lastMove = Date.now();
+
+      xyCoords.push([pos.x, pos.y]);
+      window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
     }
+  }
+
+  function sendCode() {
+    console.log('WINDOW', window.localStorage.getItem('xyCoords'));
+    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
   }
 }
 
