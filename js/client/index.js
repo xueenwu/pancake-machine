@@ -412,7 +412,7 @@ function operateCanvas() {
 
       ctx.beginPath(); // begin
 
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 15;
       ctx.lineCap = 'round';
       ctx.strokeStyle = '#c0392b';
 
