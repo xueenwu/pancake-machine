@@ -34,6 +34,13 @@ const view = (state) => html`
     </div>
 
     <div class=${['view-window', state.viewWindow ? '' : 'hide'].join(' ')}>
+      <canvas
+        id="draw-pancake"
+        width="200"
+        height="200"
+        style="border:1px solid #000000;"
+      >
+      </canvas>
       <button class="button" @click=${runPresetCode}>
         Click to step axisMotor
       </button>
@@ -253,7 +260,69 @@ window.addEventListener('keydown', (e) => {
 });
 
 function runPresetCode() {
-  runCode(`await axisMotor.setCScale(1);
-    await axisMotor.setSPU(1);
+  runCode(`await axisMotor.setCScale(0.5);
+    await axisMotor.setSPU(100);
+    await axisMotor.setVelocity(100);
     await axisMotor.relative(1);`);
 }
+
+function operateCanvas() {
+  // create canvas element and append it to document body
+  // var canvas = document.createElement('canvas');
+  var canvas = document.getElementById('draw-pancake');
+  // document.body.appendChild(canvas);
+
+  // some hotfixes... ( ≖_≖)
+  // document.body.style.margin = 0;
+  // canvas.style.position = 'fixed';
+
+  // get canvas 2D context and set him correct size
+  var ctx = canvas.getContext('2d');
+  resize();
+
+  // last known position
+  var pos = { x: 0, y: 0 };
+  var lastMove = Date.now();
+
+  window.addEventListener('resize', resize);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mousedown', setPosition);
+  canvas.addEventListener('mouseenter', setPosition);
+
+  // new position from mouse event
+  function setPosition(e) {
+    pos.x = e.clientX;
+    pos.y = e.clientY;
+  }
+
+  // resize canvas
+  function resize() {
+    ctx.canvas.width = window.innerWidth;
+    // ctx.canvas.height = window.innerHeight;
+    ctx.canvas.height = 200;
+  }
+
+  function draw(e) {
+    if (Date.now() - lastMove > 40) {
+      // mouse left button must be pressed
+      if (e.buttons !== 1) return;
+
+      ctx.beginPath(); // begin
+
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#c0392b';
+
+      ctx.moveTo(pos.x, pos.y); // from
+      setPosition(e);
+      ctx.lineTo(pos.x, pos.y); // to
+
+      ctx.stroke(); // draw it!
+      console.log('x', pos.x, 'y', pos.y);
+
+      lastMove = Date.now();
+    }
+  }
+}
+
+operateCanvas();
