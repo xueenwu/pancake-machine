@@ -299,9 +299,40 @@ function runCodeXyCoords(xyCoords) {
       if(r > ARMLENGTH) {
         throw new Error('XY coords are outside range of arm');
       }
+
+      /***************************************** MAIN FUNCTIONS ******************************************/
+      /**
+       * Given an array of (x, y) coordinates, draw out the pancake, in order
+       * @param  {Array} coordinates The array[array[number, number]] of (x, y) coords to draw in order
+       */
+      async function execute(coordinates) {
+        // First reset the body
+        moveToOrigin();
+      
+        // Now move the axisMotor & rMotor to desired locations to extrude
+        let polarCoords = coordinates.map(rect => convertToPolar(rect[0], rect[1]));
+        let prev = [AXISORIGIN, RORIGIN];
+        for (let i = 0; i < polarCoords.length; i++) {
+          await axisMotor.relative(polarCoords[i][0] - prev[0]);
+          let dist = polarCoords[i][1] - prev[1];
+          await rMotor.relative(dist/(TEETH * TEETHDIST);
+          await extrusionMotor.absolute(EXTRUDE);
+          prev = polarCoords[i]
+        }
+      
+        // Reset
+        moveToOrigin();
+      }
   
-  return [theta, r];
+      return [theta, r];
     };
+
+    /***************************************** TEST CODE ******************************************/
+    let SQUARE_COORDS = ${xyCoords} // realistically, we'll need much lower increments
+    let polarCoords = SQUARE_COORDS.map(coord => convertToPolar(coord[0], coord[1]))
+    console.log(polarCoords);
+    await axisMotor.relative(0.1);
+    // moveToOrigin();
     
     await axisMotor.setCScale(0.5);
     await axisMotor.setSPU(100);
