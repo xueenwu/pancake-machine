@@ -278,7 +278,6 @@ function operateCanvas() {
 
   // get canvas 2D context and set him correct size
   var ctx = canvas.getContext('2d');
-  resize();
   // resize();
 
   // last known position
@@ -290,10 +289,17 @@ function operateCanvas() {
   canvas.addEventListener('mousedown', setPosition);
   canvas.addEventListener('mouseenter', setPosition);
 
+  // get x and y position within the canvas
+  function getMousePos(canvas, e) {
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
   // new position from mouse event
   function setPosition(e) {
-    pos.x = e.clientX;
-    pos.y = e.clientY;
+    pos = getMousePos(canvas, e);
+    // pos.x = e.clientX;
+    // pos.y = e.clientY;
   }
 
   // resize canvas
