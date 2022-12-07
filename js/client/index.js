@@ -377,7 +377,7 @@ function runCodeXyCoords(xyCoords) {
       //   let dist = polarCoords[i][1] - prev[1];
       //   await new Promise(r => setTimeout(r, 1000));
       //   axisMotor.relative(polarCoords[i][0] - prev[0]);
-      //   rMotor.relative(-dist/(TEETH * TEETHDIST) * 2 * Math.PI);
+      //   rMotor.relative(-dist/(TEETH * TEETHDIST) * 2 * Math.PI));
       //   extrusionMotor.relative(EXTRUDE);
       //   prev = polarCoords[i];
       // }
@@ -387,16 +387,7 @@ function runCodeXyCoords(xyCoords) {
     }
 
     /***************************************** TEST CODE ******************************************/
-    let SQUARE_COORDS = ${xyCoords} // realistically, we'll need much lower increments
-    let polarCoords = SQUARE_COORDS.map(coord => convertToPolar(coord[0], coord[1]))
-    console.log(polarCoords);
-    await axisMotor.relative(0.1);
-    // moveToOrigin();
-    
-    await axisMotor.setCScale(0.5);
-    await axisMotor.setSPU(100);
-    await axisMotor.setVelocity(100);
-    await axisMotor.relative(1);`
+    execute(${xyCoords})`
   );
 }
 
