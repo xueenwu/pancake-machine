@@ -154,3 +154,35 @@ codemirror-editor {
 	display: none;
 }
 
+.column_75 {
+  float: left;
+  width: 75%;
+}
+
+.column_5 {
+  float: left;
+  width: 5%;
+}
+
+.column_20 {
+    float:left;
+    width: 20%;
+	min-width: 200px;
+    background: #EEEEEE;
+}
+
+.row {
+  display: flex;
+}
+
+.mButton {
+	width: 30px;
+	height: 20px;
+	margin: 3px;
+}
+
+.mButton2 {
+	width: 180px;
+	height: 20px;
+	margin: 3px;
+}

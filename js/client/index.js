@@ -31,17 +31,52 @@ const view = (state) => html`
         List of Things
       </div>
       ${Object.entries(global_state.things).map(drawThing)}
+      
     </div>
 
     <div class=${['view-window', state.viewWindow ? '' : 'hide'].join(' ')}>
-      <canvas
+      <div class="column_75" id="column_75">
+        <canvas
         id="draw-pancake"
-        width="200"
-        height="200"
-        style="border:1px solid #000000;"
-      >
-      </canvas>
-      <button id="send-code" class="button">Click to step axisMotor</button>
+        width=500px
+        height=500px
+        style="border:1px solid #000000; margin: 30px"></canvas>
+      </div>
+      <div class="column_5"></div>
+      <div class="column_20">
+        <div><strong>Step motor status:</strong></div>
+        <div>Motor 1: Disconnected</div>
+        <div>Motor 2: Disconnected</div>
+        <div>Motor 3: Disconnected</div>
+        <br>
+        <div><strong>Basic commands</strong></div>
+        <div>Motor 1: 
+            <button id="btn_11" class="mButton">+</button>
+            <button id="btn_12" class="mButton">-</button>
+        </div>
+        <div>Motor 2: 
+            <button id="btn_21" class="mButton">+</button>
+            <button id="btn_22" class="mButton">-</button>
+        </div>
+        <div>Motor 3: 
+            <button id="btn_31" class="mButton">+</button>
+            <button id="btn_32" class="mButton">-</button>
+        </div>
+        <br>
+        <div><strong>Pancake simple shapes</strong></div>
+        <button id="btn_rect" class="mButton2">Draw rectangle</button>
+        <button id="btn_circle" class="mButton2">Draw circle</button>
+        <br>
+        <br>
+        <div><strong>Canvas complex shapes</strong></div>
+        <button id="btn_clear" class="mButton2">Clear canvas</button>
+        <button id="btn_send" class="mButton2">Send shapes</button>
+        <br>
+        <br>
+        <div><strong>General function</strong></div>
+        <button id="btn_reset" class="mButton2">Stop and reset</button>
+      </div>
+      
     </div>
   </div>
   ${state.renaming !== '' ? renameForm(state) : ''}
@@ -377,13 +412,10 @@ function operateCanvas() {
   var pos = { x: 0, y: 0 };
   var lastMove = Date.now();
 
-  window.addEventListener('resize', resize);
+
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mousedown', setPosition);
   canvas.addEventListener('mouseenter', setPosition);
-
-  var sendCodeButton = document.getElementById('send-code');
-  sendCodeButton.addEventListener('click', sendCode);
 
   // get x and y position within the canvas
   function getMousePos(canvas, e) {
@@ -396,13 +428,6 @@ function operateCanvas() {
     pos = getMousePos(canvas, e);
     // pos.x = e.clientX;
     // pos.y = e.clientY;
-  }
-
-  // resize canvas
-  function resize() {
-    ctx.canvas.width = window.innerWidth;
-    // ctx.canvas.height = window.innerHeight;
-    ctx.canvas.height = 200;
   }
 
   function draw(e) {
@@ -429,11 +454,97 @@ function operateCanvas() {
       window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
     }
   }
-
-  function sendCode() {
-    console.log('WINDOW', window.localStorage.getItem('xyCoords'));
-    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
-  }
 }
 
 operateCanvas();
+
+// Window resize event
+function resize() {
+  var canvas = document.getElementById('draw-pancake');
+  var ctx = canvas.getContext('2d');
+  // ctx.canvas.width = document.getElementById("column_75").offsetWidth;
+  // ctx.canvas.height = window.innerHeight;
+}
+
+function basicCommandsClick(index=0, direction=0) {
+  // Todo: @Kevin
+  var code = ``;
+  console.log(`${index}-${direction}`);
+  runCodeStr(code)
+}
+
+function simpleShapeClick(shape) {
+  // Todo: @Kevin
+  console.log(`${shape} to extrude`);
+  if (shape === 'rectangle'){
+    var code = ``;
+    runCodeStr(code);
+  }
+  else if (shape === 'circle'){
+    var code = ``;
+    runCodeStr(code);
+  }
+}
+
+function setupBasicCommands(){
+  var btnMotor11 = document.getElementById("btn_11");
+  var btnMotor12 = document.getElementById("btn_12");
+  var btnMotor21 = document.getElementById("btn_21");
+  var btnMotor22 = document.getElementById("btn_22");
+  var btnMotor31 = document.getElementById("btn_31");
+  var btnMotor32 = document.getElementById("btn_32");
+
+  btnMotor11.addEventListener("click", function(){basicCommandsClick(1,1)});
+  btnMotor12.addEventListener("click", function(){basicCommandsClick(1,-1)});
+  btnMotor21.addEventListener("click", function(){basicCommandsClick(2,1)});
+  btnMotor22.addEventListener("click", function(){basicCommandsClick(2,-1)});
+  btnMotor31.addEventListener("click", function(){basicCommandsClick(3,1)});
+  btnMotor32.addEventListener("click", function(){basicCommandsClick(3,-1)});
+}
+
+function setupSimpleShapes(){
+  var btnDrawRectangle = document.getElementById("btn_rect");
+  var btnDrawCircle = document.getElementById("btn_circle");
+
+  btnDrawRectangle.addEventListener("click", function(){simpleShapeClick('rectangle')});
+  btnDrawCircle.addEventListener("click", function(){simpleShapeClick('circle')});
+}
+
+function setupCanvasFunctions(){
+  var btnCanvasClear = document.getElementById("btn_clear");
+  var btnSend = document.getElementById("btn_send");
+
+  btnCanvasClear.addEventListener("click", function(){
+    var canvas = document.getElementById('draw-pancake');
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+  });
+
+  btnSend.addEventListener("click", function(){
+    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
+  });
+}
+
+function setupGeneralFunction(){
+  var btnReset = document.getElementById("btn_reset");
+  btnReset.addEventListener("click", function (){
+    // Cancel the current thing;
+    var code = `
+    async function moveToOrigin() {
+      await axisMotor.absolute(AXISORIGIN);
+      await rMotor.absolute(RORIGIN);
+    };
+    moveToOrigin();
+    
+    `
+    runCodeStr();
+  })
+}
+
+window.onload = function(){
+  window.addEventListener('resize', resize);
+  setupBasicCommands();
+  setupSimpleShapes();
+  setupCanvasFunctions();
+  setupGeneralFunction();
+}
