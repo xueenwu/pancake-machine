@@ -1,10 +1,10 @@
-import { rescan } from './modularThingClient.js';
-import { global_state } from './global_state.js';
-import createSynchronizer from '../virtualThings/synchronizer';
-import Terminal from 'xterm';
-import { render, html } from 'lit-html';
+import { rescan } from "./modularThingClient.js";
+import { global_state } from "./global_state.js";
+import createSynchronizer from "../virtualThings/synchronizer";
+import Terminal from "xterm";
+import { render, html } from "lit-html";
 
-import './codemirror.js';
+import "./codemirror.js";
 
 const view = (state) => html`
   <div class="menu">
@@ -33,7 +33,7 @@ const view = (state) => html`
       ${Object.entries(global_state.things).map(drawThing)}
     </div>
 
-    <div class=${['view-window', state.viewWindow ? '' : 'hide'].join(' ')}>
+    <div class=${["view-window", state.viewWindow ? "" : "hide"].join(" ")}>
       <div class="column_75" id="column_75">
         <canvas
           id="draw-pancake"
@@ -81,7 +81,7 @@ const view = (state) => html`
       </div>
     </div>
   </div>
-  ${state.renaming !== '' ? renameForm(state) : ''}
+  ${state.renaming !== "" ? renameForm(state) : ""}
 `;
 
 const drawThing = (thing) => html`
@@ -106,7 +106,7 @@ const drawApi = (thing) => {
     (entry) => html`
       <div class="apiEntry">
         <div>
-          ${entry.name}(${entry.args.map((x) => x.split(':')[0]).join(', ')})
+          ${entry.name}(${entry.args.map((x) => x.split(":")[0]).join(", ")})
         </div>
         ${entry.args.map(
           (x, i) => html`<div style="padding-left: 10px;">${x}</div>`
@@ -115,7 +115,7 @@ const drawApi = (thing) => {
           ? html`<div class="apiEntry-return">
               <b>returns:</b> ${entry.return}
             </div>`
-          : ''}
+          : ""}
       </div>
     `
   );
@@ -125,20 +125,20 @@ const getApi = (thing) => {
   const api = Object.keys(thing).map((x) => [x, getParamNames(thing[x])]);
   // don't include "setup" or "setName" or "vt"
   return api
-    .filter((x) => !['setup', 'setName', 'vt', 'firmwareName'].includes(x[0]))
+    .filter((x) => !["setup", "setName", "vt", "firmwareName"].includes(x[0]))
     .map(apiEntry);
 };
 
 const apiEntry = ([name, params]) => html`
-  <div class="apiEntry">${name}(${params.join(', ')})</div>
+  <div class="apiEntry">${name}(${params.join(", ")})</div>
 `;
 
 var STRIP_COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/gm;
 var ARGUMENT_NAMES = /([^\s,]+)/g;
 function getParamNames(func) {
-  var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+  var fnStr = func.toString().replace(STRIP_COMMENTS, "");
   var result = fnStr
-    .slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')'))
+    .slice(fnStr.indexOf("(") + 1, fnStr.indexOf(")"))
     .match(ARGUMENT_NAMES);
   if (result === null) result = [];
   return result;
@@ -154,16 +154,16 @@ const renameForm = (state) => html`
       class="button"
       @click=${() => {
         const thing = state.things[state.renaming];
-        const newName = document.querySelector('.rename-form-input').value;
+        const newName = document.querySelector(".rename-form-input").value;
         thing.vThing.setName(newName);
         delete state.things[state.renaming];
         state.things[newName] = thing;
-        state.renaming = '';
+        state.renaming = "";
       }}
     >
       rename
     </button>
-    <button class="button" @click=${() => (state.renaming = '')}>close</button>
+    <button class="button" @click=${() => (state.renaming = "")}>close</button>
   </div>
 `;
 
@@ -180,11 +180,11 @@ function init() {
   // var term = new Terminal();
   // term.open(document.querySelector('.terminal'));
   // term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ');
-  const cache = localStorage.getItem('cache');
+  const cache = localStorage.getItem("cache");
   if (cache) {
-    const cm = document.querySelector('codemirror-editor');
+    const cm = document.querySelector("codemirror-editor");
     cm.view.dispatch({
-      changes: { from: 0, insert: cache ?? '' },
+      changes: { from: 0, insert: cache ?? "" },
     });
   }
 }
@@ -192,7 +192,7 @@ function init() {
 init();
 
 function getCode() {
-  const cm = document.querySelector('codemirror-editor');
+  const cm = document.querySelector("codemirror-editor");
   const doc = cm.view.state.doc;
   const code = doc.toString();
 
@@ -247,8 +247,8 @@ function runCodeStr(codeStr) {
   };
 
   const render = (node) => {
-    const viewWindow = document.querySelector('.view-window');
-    viewWindow.innerHTML = '';
+    const viewWindow = document.querySelector(".view-window");
+    viewWindow.innerHTML = "";
     viewWindow.append(node);
   };
 
@@ -291,26 +291,29 @@ function runCodeXyCoords(xyCoords) {
     const ARMLENGTH = 250; // mm
     const TEETH = 20; // number of teeth for rMotor
     const TEETHDIST = 2; // mm
-    const EXTRUDE = Math.PI / 2; // radians to rotate stepper to extrude pancake mix (higher = more pancake)
+    const EXTRUDE = -Math.PI/2; // radians to rotate stepper to extrude pancake mix (higher = more pancake)
     const AXISORIGIN = 0; // change based on final setup
     const RORIGIN = 0;
     const CSCALE = 1;
-    const VELOCITY = 100;
+    const AXISVELOCITY = 0.2;
+    const RVELOCITY = 3;
+    const EXTRUSIONVELOCITY = 3;
     // 800 steps per revolution -> choosing 400/pi steps per unit means 2pi units in a revolution
     const SPU = 400 / Math.PI;
 
     /***************************************** INITIAL SETUP ********************************************/
     // TODO: add/change global variables for the different motors
-    await axisMotor.setCScale(CSCALE);
-    await axisMotor.setVelocity(VELOCITY);
-    await axisMotor.setSPU(SPU);
-    await extrusionMotor.setCScale(CSCALE);
-    await extrusionMotor.setVelocity(VELOCITY);
+    await axisMotor.setSPU(5 * SPU);
     await extrusionMotor.setSPU(SPU);
-    await rMotor.setCScale(CSCALE);
-    await rMotor.setVelocity(VELOCITY);
     await rMotor.setSPU(SPU);
-
+    await axisMotor.setCScale(CSCALE);
+    await axisMotor.setVelocity(AXISVELOCITY);
+    await extrusionMotor.setCScale(CSCALE);
+    await extrusionMotor.setVelocity(EXTRUSIONVELOCITY);
+    await rMotor.setCScale(CSCALE);
+    await rMotor.setVelocity(RVELOCITY);
+    
+    
     /***************************************** HELPER FUNCTIONS ******************************************/
     /**
      * Moves axisMotor and rMotor to default position -
@@ -336,33 +339,52 @@ function runCodeXyCoords(xyCoords) {
       if(r > ARMLENGTH) {
         throw new Error('XY coords are outside range of arm');
       }
-
-      /***************************************** MAIN FUNCTIONS ******************************************/
-      /**
-       * Given an array of (x, y) coordinates, draw out the pancake, in order
-       * @param  {Array} coordinates The array[array[number, number]] of (x, y) coords to draw in order
-       */
-      async function execute(coordinates) {
-        // First reset the body
-        moveToOrigin();
-      
-        // Now move the axisMotor & rMotor to desired locations to extrude
-        let polarCoords = coordinates.map(rect => convertToPolar(rect[0], rect[1]));
-        let prev = [AXISORIGIN, RORIGIN];
-        for (let i = 0; i < polarCoords.length; i++) {
-          await axisMotor.relative(polarCoords[i][0] - prev[0]);
-          let dist = polarCoords[i][1] - prev[1];
-          await rMotor.relative(dist/(TEETH * TEETHDIST);
-          await extrusionMotor.absolute(EXTRUDE);
-          prev = polarCoords[i]
-        }
-      
-        // Reset
-        moveToOrigin();
-      }
   
       return [theta, r];
     };
+    
+    
+    /***************************************** MAIN FUNCTIONS ******************************************/
+    /**
+     * Given an array of (x, y) coordinates, draw out the pancake, in order
+     * @param  {Array} coordinates The array[array[number, number]] of (x, y) coords to draw in order
+     */
+    async function execute(coordinates) {
+      // First reset the body
+      // moveToOrigin();
+      
+      // Prime the pancake batter to start extruding
+      await extrusionMotor.relative(EXTRUDE * 3);
+    
+      // Now move the axisMotor & rMotor to desired locations to extrude
+      let polarCoords = coordinates.map(rect => convertToPolar(rect[0], rect[1]));
+      console.log(polarCoords);
+      let prev = [AXISORIGIN, RORIGIN]
+      console.log("original", polarCoords.length)
+      for (let i = 0; i < polarCoords.length; i++) {
+        console.log("GOING THROUGH", polarCoords.length, polarCoords[i][0] - prev[0]);
+        await axisMotor.relative(-1*(polarCoords[i][0] - prev[0]));
+        console.log("axis motor moved")
+        let dist = polarCoords[i][1] - prev[1];
+        await rMotor.relative(-dist/(TEETH * TEETHDIST) * 2 * Math.PI);
+        console.log("rMotor moved")
+        await extrusionMotor.relative(EXTRUDE);
+        console.log("extrusion moved");
+        prev = polarCoords[i];
+      }
+      console.log("DONEEEE")
+      // for (let i = 0; i < polarCoords.length; i++) {
+      //   let dist = polarCoords[i][1] - prev[1];
+      //   await new Promise(r => setTimeout(r, 1000));
+      //   axisMotor.relative(polarCoords[i][0] - prev[0]);
+      //   rMotor.relative(-dist/(TEETH * TEETHDIST) * 2 * Math.PI);
+      //   extrusionMotor.relative(EXTRUDE);
+      //   prev = polarCoords[i];
+      // }
+    
+      // Reset
+      moveToOrigin();
+    }
 
     /***************************************** TEST CODE ******************************************/
     let SQUARE_COORDS = ${xyCoords} // realistically, we'll need much lower increments
@@ -378,13 +400,13 @@ function runCodeXyCoords(xyCoords) {
   );
 }
 
-window.addEventListener('keydown', (e) => {
+window.addEventListener("keydown", (e) => {
   const code = getCode();
 
-  window.localStorage.setItem('cache', code);
+  window.localStorage.setItem("cache", code);
 
   if (e.keyCode === 13 && e.shiftKey) {
-    console.log('shift + enter');
+    console.log("shift + enter");
     // const code = getCode();
     // code = `await axisMotor.setCScale(1);
     // await axisMotor.setSPU(1);
@@ -396,10 +418,10 @@ window.addEventListener('keydown', (e) => {
 
 function operateCanvas() {
   var xyCoords = [];
-  window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
+  window.localStorage.setItem("xyCoords", JSON.stringify(xyCoords));
   // create canvas element and append it to document body
   // var canvas = document.createElement('canvas');
-  var canvas = document.getElementById('draw-pancake');
+  var canvas = document.getElementById("draw-pancake");
   // document.body.appendChild(canvas);
 
   // some hotfixes... ( ≖_≖)
@@ -407,16 +429,16 @@ function operateCanvas() {
   // canvas.style.position = 'fixed';
 
   // get canvas 2D context and set him correct size
-  var ctx = canvas.getContext('2d');
+  var ctx = canvas.getContext("2d");
   // resize();
 
   // last known position
   var pos = { x: 0, y: 0 };
   var lastMove = Date.now();
 
-  canvas.addEventListener('mousemove', draw);
-  canvas.addEventListener('mousedown', setPosition);
-  canvas.addEventListener('mouseenter', setPosition);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mousedown", setPosition);
+  canvas.addEventListener("mouseenter", setPosition);
 
   // get x and y position within the canvas
   function getMousePos(canvas, e) {
@@ -432,15 +454,15 @@ function operateCanvas() {
   }
 
   function draw(e) {
-    if (Date.now() - lastMove > 40) {
+    if (Date.now() - lastMove > 80) {
       // mouse left button must be pressed
       if (e.buttons !== 1) return;
 
       ctx.beginPath(); // begin
 
       ctx.lineWidth = 15;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#c0392b';
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#c0392b";
 
       ctx.moveTo(pos.x, pos.y); // from
       setPosition(e);
@@ -450,12 +472,12 @@ function operateCanvas() {
 
       lastMove = Date.now();
 
-      var x = (pos.x - 250) / 2;
-      var y = (400 - pos.y) / 2;
+      var x = (pos.x - 100) / 2;
+      var y = (250 - pos.y) / 2;
 
       xyCoords.push([x, y]);
-      console.log('x', x, 'y', y);
-      window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
+      console.log("x", x, "y", y);
+      window.localStorage.setItem("xyCoords", JSON.stringify(xyCoords));
     }
   }
 }
@@ -464,8 +486,8 @@ operateCanvas();
 
 // Window resize event
 function resize() {
-  var canvas = document.getElementById('draw-pancake');
-  var ctx = canvas.getContext('2d');
+  var canvas = document.getElementById("draw-pancake");
+  var ctx = canvas.getContext("2d");
   // ctx.canvas.width = document.getElementById("column_75").offsetWidth;
   // ctx.canvas.height = window.innerHeight;
 }
@@ -487,106 +509,106 @@ function basicCommandsClick(index = 0, direction = 0) {
 function simpleShapeClick(shape) {
   // Todo: @Kevin
   console.log(`${shape} to extrude`);
-  if (shape === 'rectangle') {
+  if (shape === "rectangle") {
     var code = ``;
     runCodeStr(code);
-  } else if (shape === 'circle') {
+  } else if (shape === "circle") {
     var code = ``;
     runCodeStr(code);
   }
 }
 
 function setupBasicCommands() {
-  var btnMotor11 = document.getElementById('btn_11');
-  var btnMotor12 = document.getElementById('btn_12');
-  var btnMotor21 = document.getElementById('btn_21');
-  var btnMotor22 = document.getElementById('btn_22');
-  var btnMotor31 = document.getElementById('btn_31');
-  var btnMotor32 = document.getElementById('btn_32');
+  var btnMotor11 = document.getElementById("btn_11");
+  var btnMotor12 = document.getElementById("btn_12");
+  var btnMotor21 = document.getElementById("btn_21");
+  var btnMotor22 = document.getElementById("btn_22");
+  var btnMotor31 = document.getElementById("btn_31");
+  var btnMotor32 = document.getElementById("btn_32");
 
-  btnMotor11.addEventListener('click', function () {
+  btnMotor11.addEventListener("click", function () {
     basicCommandsClick(1, 1);
   });
-  btnMotor12.addEventListener('click', function () {
+  btnMotor12.addEventListener("click", function () {
     basicCommandsClick(1, -1);
   });
-  btnMotor21.addEventListener('click', function () {
+  btnMotor21.addEventListener("click", function () {
     basicCommandsClick(2, 1);
   });
-  btnMotor22.addEventListener('click', function () {
+  btnMotor22.addEventListener("click", function () {
     basicCommandsClick(2, -1);
   });
-  btnMotor31.addEventListener('click', function () {
+  btnMotor31.addEventListener("click", function () {
     basicCommandsClick(3, 1);
   });
-  btnMotor32.addEventListener('click', function () {
+  btnMotor32.addEventListener("click", function () {
     basicCommandsClick(3, -1);
   });
 }
 
 function setupSimpleShapes() {
-  var btnDrawRectangle = document.getElementById('btn_rect');
-  var btnDrawCircle = document.getElementById('btn_circle');
+  var btnDrawRectangle = document.getElementById("btn_rect");
+  var btnDrawCircle = document.getElementById("btn_circle");
 
-  btnDrawRectangle.addEventListener('click', function () {
-    simpleShapeClick('rectangle');
+  btnDrawRectangle.addEventListener("click", function () {
+    simpleShapeClick("rectangle");
   });
-  btnDrawCircle.addEventListener('click', function () {
-    simpleShapeClick('circle');
+  btnDrawCircle.addEventListener("click", function () {
+    simpleShapeClick("circle");
   });
 }
 
 function initializeCanvas() {
-  var canvas = document.getElementById('draw-pancake');
-  var ctx = canvas.getContext('2d');
+  var canvas = document.getElementById("draw-pancake");
+  var ctx = canvas.getContext("2d");
 
   ctx.beginPath(); // begin
 
   ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#000000';
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#000000";
 
-  ctx.moveTo(240, 400); // from
-  ctx.lineTo(260, 400); // to
+  ctx.moveTo(90, 250); // from
+  ctx.lineTo(110, 250); // to
   ctx.stroke(); // draw it!
 
   ctx.beginPath(); // begin
 
   ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#000000';
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#000000";
 
-  ctx.moveTo(250, 390); // from
-  ctx.lineTo(250, 410); // to
+  ctx.moveTo(100, 240); // from
+  ctx.lineTo(100, 260); // to
   ctx.stroke(); // draw it!
 
   ctx.beginPath();
   ctx.arc(250, 250, 150, 0, 2 * Math.PI);
   ctx.stroke();
 
-  console.log('here');
+  console.log("here");
 }
 
 function setupCanvasFunctions() {
-  var btnCanvasClear = document.getElementById('btn_clear');
-  var btnSend = document.getElementById('btn_send');
+  var btnCanvasClear = document.getElementById("btn_clear");
+  var btnSend = document.getElementById("btn_send");
 
-  btnCanvasClear.addEventListener('click', function () {
-    var canvas = document.getElementById('draw-pancake');
-    var ctx = canvas.getContext('2d');
+  btnCanvasClear.addEventListener("click", function () {
+    var canvas = document.getElementById("draw-pancake");
+    var ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     initializeCanvas();
   });
 
-  btnSend.addEventListener('click', function () {
-    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
+  btnSend.addEventListener("click", function () {
+    runCodeXyCoords(window.localStorage.getItem("xyCoords"));
   });
 }
 
 function setupGeneralFunction() {
-  var btnReset = document.getElementById('btn_reset');
-  btnReset.addEventListener('click', function () {
+  var btnReset = document.getElementById("btn_reset");
+  btnReset.addEventListener("click", function () {
     // Cancel the current thing;
     var code = `
     async function moveToOrigin() {
@@ -601,7 +623,7 @@ function setupGeneralFunction() {
 }
 
 window.onload = function () {
-  window.addEventListener('resize', resize);
+  window.addEventListener("resize", resize);
   setupBasicCommands();
   setupSimpleShapes();
   setupCanvasFunctions();
