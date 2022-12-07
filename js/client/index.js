@@ -463,8 +463,15 @@ function resize() {
 }
 
 function basicCommandsClick(index = 0, direction = 0) {
-  // Todo: @Kevin
-  var code = ``;
+  // 0 = axisMotor, 1 = rMotor, 2 = extrusionMotor
+  // direction = 1 (forward) or -1 (backward)
+
+  var code =
+    index === 0
+      ? `await axisMotor.relative(${2 * direction})`
+      : index === 1
+      ? `await rMotor.relative(${2 * direction})`
+      : `await extrusionMotor.relative(${2 * direction})`;
   console.log(`${index}-${direction}`);
   runCodeStr(code);
 }
