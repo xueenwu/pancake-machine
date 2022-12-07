@@ -446,11 +446,15 @@ function operateCanvas() {
       ctx.lineTo(pos.x, pos.y); // to
 
       ctx.stroke(); // draw it!
-      console.log('x', pos.x, 'y', pos.y);
+
 
       lastMove = Date.now();
 
-      xyCoords.push([pos.x, pos.y]);
+      var x = (pos.x - 250) / 2;
+      var y = (400 - pos.y) / 2;
+
+      xyCoords.push([x, y]);
+      console.log('x', x, 'y', y);
       window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
     }
   }
@@ -510,6 +514,37 @@ function setupSimpleShapes(){
   btnDrawCircle.addEventListener("click", function(){simpleShapeClick('circle')});
 }
 
+function initializeCanvas(){
+  var canvas = document.getElementById('draw-pancake');
+  var ctx = canvas.getContext('2d');
+
+  ctx.beginPath(); // begin
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000000';
+
+  ctx.moveTo(240, 400); // from
+  ctx.lineTo(260, 400); // to
+  ctx.stroke(); // draw it!
+
+  ctx.beginPath(); // begin
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000000';
+
+  ctx.moveTo(250, 390); // from
+  ctx.lineTo(250, 410); // to
+  ctx.stroke(); // draw it!
+
+  ctx.beginPath();
+  ctx.arc(250, 250, 150, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  console.log('here')
+}
+
 function setupCanvasFunctions(){
   var btnCanvasClear = document.getElementById("btn_clear");
   var btnSend = document.getElementById("btn_send");
@@ -518,6 +553,8 @@ function setupCanvasFunctions(){
     var canvas = document.getElementById('draw-pancake');
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0, canvas.width, canvas.height);
+
+    initializeCanvas();
   });
 
   btnSend.addEventListener("click", function(){
@@ -547,4 +584,5 @@ window.onload = function(){
   setupSimpleShapes();
   setupCanvasFunctions();
   setupGeneralFunction();
+  initializeCanvas();
 }
