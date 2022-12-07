@@ -34,14 +34,51 @@ const view = (state) => html`
     </div>
 
     <div class=${['view-window', state.viewWindow ? '' : 'hide'].join(' ')}>
-      <canvas
-        id="draw-pancake"
-        width="200"
-        height="200"
-        style="border:1px solid #000000;"
-      >
-      </canvas>
-      <button id="send-code" class="button">Click to step axisMotor</button>
+      <div class="column_75" id="column_75">
+        <canvas
+          id="draw-pancake"
+          width="500px"
+          height="500px"
+          style="border:1px solid #000000; margin: 30px"
+        ></canvas>
+      </div>
+      <div class="column_5"></div>
+      <div class="column_20">
+        <div><strong>Step motor status:</strong></div>
+        <div>Motor 1: Disconnected</div>
+        <div>Motor 2: Disconnected</div>
+        <div>Motor 3: Disconnected</div>
+        <br />
+        <div><strong>Basic commands</strong></div>
+        <div>
+          Motor 1:
+          <button id="btn_11" class="mButton">+</button>
+          <button id="btn_12" class="mButton">-</button>
+        </div>
+        <div>
+          Motor 2:
+          <button id="btn_21" class="mButton">+</button>
+          <button id="btn_22" class="mButton">-</button>
+        </div>
+        <div>
+          Motor 3:
+          <button id="btn_31" class="mButton">+</button>
+          <button id="btn_32" class="mButton">-</button>
+        </div>
+        <br />
+        <div><strong>Pancake simple shapes</strong></div>
+        <button id="btn_rect" class="mButton2">Draw rectangle</button>
+        <button id="btn_circle" class="mButton2">Draw circle</button>
+        <br />
+        <br />
+        <div><strong>Canvas complex shapes</strong></div>
+        <button id="btn_clear" class="mButton2">Clear canvas</button>
+        <button id="btn_send" class="mButton2">Send shapes</button>
+        <br />
+        <br />
+        <div><strong>General function</strong></div>
+        <button id="btn_reset" class="mButton2">Stop and reset</button>
+      </div>
     </div>
   </div>
   ${state.renaming !== '' ? renameForm(state) : ''}
@@ -243,10 +280,101 @@ function runCodeStr(codeStr) {
 
 function runCodeXyCoords(xyCoords) {
   runCodeStr(
-    `await axisMotor.setCScale(0.5);
-    await axisMotor.setSPU(1);
-    await axisMotor.relative(200);
-    `
+    `/*
+    MOTORS:
+      - axisMotor: stepper motor that controls rotation of arm + pancake extruder
+      - extrusionMotor: stepper motor that controls the extrusion of pancake batter
+      - rMotor: stepper motor that controls the distance of the extruder from the axis
+    */
+
+    /***************************************** GLOBAL VARIABLES ******************************************/
+    const ARMLENGTH = 250; // mm
+    const TEETH = 20; // number of teeth for rMotor
+    const TEETHDIST = 2; // mm
+    const EXTRUDE = Math.PI / 2; // radians to rotate stepper to extrude pancake mix (higher = more pancake)
+    const AXISORIGIN = 0; // change based on final setup
+    const RORIGIN = 0;
+    const CSCALE = 1;
+    const VELOCITY = 100;
+    // 800 steps per revolution -> choosing 400/pi steps per unit means 2pi units in a revolution
+    const SPU = 400 / Math.PI;
+
+    /***************************************** INITIAL SETUP ********************************************/
+    // TODO: add/change global variables for the different motors
+    await axisMotor.setCScale(CSCALE);
+    await axisMotor.setVelocity(VELOCITY);
+    await axisMotor.setSPU(SPU);
+    await extrusionMotor.setCScale(CSCALE);
+    await extrusionMotor.setVelocity(VELOCITY);
+    await extrusionMotor.setSPU(SPU);
+    await rMotor.setCScale(CSCALE);
+    await rMotor.setVelocity(VELOCITY);
+    await rMotor.setSPU(SPU);
+
+    /***************************************** HELPER FUNCTIONS ******************************************/
+    /**
+     * Moves axisMotor and rMotor to default position -
+     * vertical center of a semi-circle, or at 0 radians in [-pi/2, pi/2] with radius ARMLENGTH
+     */
+    async function moveToOrigin() {
+      await axisMotor.absolute(AXISORIGIN);
+      await rMotor.absolute(RORIGIN);
+    };
+
+    /**
+     * Convert a given rectangular coordinate (x, y) into polar coordinates (theta, r) for
+     * axisMotor to rotate "theta" from origin and rMotor to move to a distance "r"
+     * @param  {Number} x The x-coordinate 
+     * @param  {Number} y The y-coordinate
+     * @return {Array}    Array[Number, Number]: first elt is theta and the second elt is r
+     */
+    const convertToPolar = (x, y) => {
+      let theta = Math.atan2(y, x); // radians where theta is in [-pi/2, pi/2]
+      let r = Math.sqrt(x**2 + y**2);
+    
+      // Make sure we're working in bounds
+      if(r > ARMLENGTH) {
+        throw new Error('XY coords are outside range of arm');
+      }
+
+      /***************************************** MAIN FUNCTIONS ******************************************/
+      /**
+       * Given an array of (x, y) coordinates, draw out the pancake, in order
+       * @param  {Array} coordinates The array[array[number, number]] of (x, y) coords to draw in order
+       */
+      async function execute(coordinates) {
+        // First reset the body
+        moveToOrigin();
+      
+        // Now move the axisMotor & rMotor to desired locations to extrude
+        let polarCoords = coordinates.map(rect => convertToPolar(rect[0], rect[1]));
+        let prev = [AXISORIGIN, RORIGIN];
+        for (let i = 0; i < polarCoords.length; i++) {
+          await axisMotor.relative(polarCoords[i][0] - prev[0]);
+          let dist = polarCoords[i][1] - prev[1];
+          await rMotor.relative(dist/(TEETH * TEETHDIST);
+          await extrusionMotor.absolute(EXTRUDE);
+          prev = polarCoords[i]
+        }
+      
+        // Reset
+        moveToOrigin();
+      }
+  
+      return [theta, r];
+    };
+
+    /***************************************** TEST CODE ******************************************/
+    let SQUARE_COORDS = ${xyCoords} // realistically, we'll need much lower increments
+    let polarCoords = SQUARE_COORDS.map(coord => convertToPolar(coord[0], coord[1]))
+    console.log(polarCoords);
+    await axisMotor.relative(0.1);
+    // moveToOrigin();
+    
+    await axisMotor.setCScale(0.5);
+    await axisMotor.setSPU(100);
+    await axisMotor.setVelocity(100);
+    await axisMotor.relative(1);`
   );
 }
 
@@ -286,13 +414,9 @@ function operateCanvas() {
   var pos = { x: 0, y: 0 };
   var lastMove = Date.now();
 
-  window.addEventListener('resize', resize);
   canvas.addEventListener('mousemove', draw);
   canvas.addEventListener('mousedown', setPosition);
   canvas.addEventListener('mouseenter', setPosition);
-
-  var sendCodeButton = document.getElementById('send-code');
-  sendCodeButton.addEventListener('click', sendCode);
 
   // get x and y position within the canvas
   function getMousePos(canvas, e) {
@@ -307,13 +431,6 @@ function operateCanvas() {
     // pos.y = e.clientY;
   }
 
-  // resize canvas
-  function resize() {
-    ctx.canvas.width = window.innerWidth;
-    // ctx.canvas.height = window.innerHeight;
-    ctx.canvas.height = 200;
-  }
-
   function draw(e) {
     if (Date.now() - lastMove > 40) {
       // mouse left button must be pressed
@@ -321,7 +438,7 @@ function operateCanvas() {
 
       ctx.beginPath(); // begin
 
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 15;
       ctx.lineCap = 'round';
       ctx.strokeStyle = '#c0392b';
 
@@ -330,19 +447,164 @@ function operateCanvas() {
       ctx.lineTo(pos.x, pos.y); // to
 
       ctx.stroke(); // draw it!
-      console.log('x', pos.x, 'y', pos.y);
 
       lastMove = Date.now();
 
-      xyCoords.push([pos.x, pos.y]);
+      var x = (pos.x - 250) / 2;
+      var y = (400 - pos.y) / 2;
+
+      xyCoords.push([x, y]);
+      console.log('x', x, 'y', y);
       window.localStorage.setItem('xyCoords', JSON.stringify(xyCoords));
     }
-  }
-
-  function sendCode() {
-    console.log('WINDOW', window.localStorage.getItem('xyCoords'));
-    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
   }
 }
 
 operateCanvas();
+
+// Window resize event
+function resize() {
+  var canvas = document.getElementById('draw-pancake');
+  var ctx = canvas.getContext('2d');
+  // ctx.canvas.width = document.getElementById("column_75").offsetWidth;
+  // ctx.canvas.height = window.innerHeight;
+}
+
+function basicCommandsClick(index = 0, direction = 0) {
+  // 0 = axisMotor, 1 = rMotor, 2 = extrusionMotor
+  // direction = 1 (forward) or -1 (backward)
+
+  var code =
+    index === 0
+      ? `await axisMotor.relative(${2 * direction})`
+      : index === 1
+      ? `await rMotor.relative(${2 * direction})`
+      : `await extrusionMotor.relative(${2 * direction})`;
+  console.log(`${index}-${direction}`);
+  runCodeStr(code);
+}
+
+function simpleShapeClick(shape) {
+  // Todo: @Kevin
+  console.log(`${shape} to extrude`);
+  if (shape === 'rectangle') {
+    var code = ``;
+    runCodeStr(code);
+  } else if (shape === 'circle') {
+    var code = ``;
+    runCodeStr(code);
+  }
+}
+
+function setupBasicCommands() {
+  var btnMotor11 = document.getElementById('btn_11');
+  var btnMotor12 = document.getElementById('btn_12');
+  var btnMotor21 = document.getElementById('btn_21');
+  var btnMotor22 = document.getElementById('btn_22');
+  var btnMotor31 = document.getElementById('btn_31');
+  var btnMotor32 = document.getElementById('btn_32');
+
+  btnMotor11.addEventListener('click', function () {
+    basicCommandsClick(1, 1);
+  });
+  btnMotor12.addEventListener('click', function () {
+    basicCommandsClick(1, -1);
+  });
+  btnMotor21.addEventListener('click', function () {
+    basicCommandsClick(2, 1);
+  });
+  btnMotor22.addEventListener('click', function () {
+    basicCommandsClick(2, -1);
+  });
+  btnMotor31.addEventListener('click', function () {
+    basicCommandsClick(3, 1);
+  });
+  btnMotor32.addEventListener('click', function () {
+    basicCommandsClick(3, -1);
+  });
+}
+
+function setupSimpleShapes() {
+  var btnDrawRectangle = document.getElementById('btn_rect');
+  var btnDrawCircle = document.getElementById('btn_circle');
+
+  btnDrawRectangle.addEventListener('click', function () {
+    simpleShapeClick('rectangle');
+  });
+  btnDrawCircle.addEventListener('click', function () {
+    simpleShapeClick('circle');
+  });
+}
+
+function initializeCanvas() {
+  var canvas = document.getElementById('draw-pancake');
+  var ctx = canvas.getContext('2d');
+
+  ctx.beginPath(); // begin
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000000';
+
+  ctx.moveTo(240, 400); // from
+  ctx.lineTo(260, 400); // to
+  ctx.stroke(); // draw it!
+
+  ctx.beginPath(); // begin
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000000';
+
+  ctx.moveTo(250, 390); // from
+  ctx.lineTo(250, 410); // to
+  ctx.stroke(); // draw it!
+
+  ctx.beginPath();
+  ctx.arc(250, 250, 150, 0, 2 * Math.PI);
+  ctx.stroke();
+
+  console.log('here');
+}
+
+function setupCanvasFunctions() {
+  var btnCanvasClear = document.getElementById('btn_clear');
+  var btnSend = document.getElementById('btn_send');
+
+  btnCanvasClear.addEventListener('click', function () {
+    var canvas = document.getElementById('draw-pancake');
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    initializeCanvas();
+  });
+
+  btnSend.addEventListener('click', function () {
+    runCodeXyCoords(window.localStorage.getItem('xyCoords'));
+  });
+}
+
+function setupGeneralFunction() {
+  var btnReset = document.getElementById('btn_reset');
+  btnReset.addEventListener('click', function () {
+    // Cancel the current thing;
+    var code = `
+    async function moveToOrigin() {
+      await axisMotor.absolute(AXISORIGIN);
+      await rMotor.absolute(RORIGIN);
+    };
+    moveToOrigin();
+    
+    `;
+    runCodeStr();
+  });
+}
+
+window.onload = function () {
+  window.addEventListener('resize', resize);
+  setupBasicCommands();
+  setupSimpleShapes();
+  setupCanvasFunctions();
+  setupGeneralFunction();
+  initializeCanvas();
+};
