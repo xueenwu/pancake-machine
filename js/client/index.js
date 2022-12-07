@@ -292,7 +292,7 @@ function runCodeXyCoords(xyCoords) {
     const ARMLENGTH = 250; // mm
     const TEETH = 20; // number of teeth for rMotor
     const TEETHDIST = 2; // mm
-    const EXTRUDE = Math.PI / 2; // radians to rotate stepper to extrude pancake mix (higher = more pancake)
+    const EXTRUDE = 4 * Math.PI; // radians to rotate stepper to extrude pancake mix (higher = more pancake)
     const AXISORIGIN = 0; // change based on final setup
     const RORIGIN = 0;
     const CSCALE = 1;
@@ -305,7 +305,7 @@ function runCodeXyCoords(xyCoords) {
     // TODO: add/change global variables for the different motors
     await axisMotor.setCScale(CSCALE);
     await axisMotor.setVelocity(VELOCITY);
-    await axisMotor.setSPU(SPU);
+    await axisMotor.setSPU(10 * SPU);
     await extrusionMotor.setCScale(CSCALE);
     await extrusionMotor.setVelocity(VELOCITY);
     await extrusionMotor.setSPU(SPU);
@@ -351,21 +351,22 @@ function runCodeXyCoords(xyCoords) {
      */
     async function execute(coordinates) {
       // First reset the body
-      moveToOrigin();
+      // moveToOrigin();
     
       // Now move the axisMotor & rMotor to desired locations to extrude
       let polarCoords = coordinates.map(rect => convertToPolar(rect[0], rect[1]));
+      console.log(polarCoords);
       let prev = [AXISORIGIN, RORIGIN]
       for (let i = 0; i < polarCoords.length; i++) {
         await axisMotor.relative(polarCoords[i][0] - prev[0]);
         let dist = polarCoords[i][1] - prev[1];
-        await rMotor.relative(dist/(TEETH * TEETHDIST));
+        await rMotor.relative(-dist/(TEETH * TEETHDIST) * 2 * Math.PI);
         await extrusionMotor.relative(EXTRUDE);
         prev = polarCoords[i];
       }
     
       // Reset
-      moveToOrigin();
+      // moveToOrigin();
     }
 
     /***************************************** TEST CODE ******************************************/
@@ -443,14 +444,13 @@ function operateCanvas() {
 
       ctx.stroke(); // draw it!
 
-
       lastMove = Date.now();
 
       var x = (pos.x - 250) / 2;
       var y = (400 - pos.y) / 2;
 
       xyCoords.push([x, y]);
-      console.log('x', x, 'y', y);
+      console.log("x", x, "y", y);
       window.localStorage.setItem("xyCoords", JSON.stringify(xyCoords));
     }
   }
@@ -532,15 +532,15 @@ function setupSimpleShapes() {
   });
 }
 
-function initializeCanvas(){
-  var canvas = document.getElementById('draw-pancake');
-  var ctx = canvas.getContext('2d');
+function initializeCanvas() {
+  var canvas = document.getElementById("draw-pancake");
+  var ctx = canvas.getContext("2d");
 
   ctx.beginPath(); // begin
 
   ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#000000';
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#000000";
 
   ctx.moveTo(240, 400); // from
   ctx.lineTo(260, 400); // to
@@ -549,8 +549,8 @@ function initializeCanvas(){
   ctx.beginPath(); // begin
 
   ctx.lineWidth = 2;
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = '#000000';
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#000000";
 
   ctx.moveTo(250, 390); // from
   ctx.lineTo(250, 410); // to
@@ -560,10 +560,10 @@ function initializeCanvas(){
   ctx.arc(250, 250, 150, 0, 2 * Math.PI);
   ctx.stroke();
 
-  console.log('here')
+  console.log("here");
 }
 
-function setupCanvasFunctions(){
+function setupCanvasFunctions() {
   var btnCanvasClear = document.getElementById("btn_clear");
   var btnSend = document.getElementById("btn_send");
 
@@ -603,4 +603,4 @@ window.onload = function () {
   setupCanvasFunctions();
   setupGeneralFunction();
   initializeCanvas();
-}
+};
